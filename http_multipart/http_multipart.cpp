@@ -1,14 +1,28 @@
 #include <windows.h>
 #include <wininet.h>
 #include <iostream>
+#include <string>
 using namespace std;
+
+// Function to extract the boundary parameter from the Content-Type header
+string extractBoundary(string contentType) {
+    size_t startPos = contentType.find("\"");
+    if (startPos != std::string::npos) {
+        size_t endPos = contentType.find("\"", startPos + 1);
+        if (endPos != std::string::npos) {
+            std::string substring = contentType.substr(startPos + 1, endPos - startPos - 1);
+            return substring;
+        }
+    }
+    return "";
+}
 
 int main() {
     HINTERNET hInternet, hConnect;
 
     INTERNET_PROXY_INFO proxyInfo;
     proxyInfo.dwAccessType = INTERNET_OPEN_TYPE_PROXY;
-    proxyInfo.lpszProxy = L"127.0.0.1:8888";
+    proxyInfo.lpszProxy = L"127.0.0.1:8888";  // Assuming Fiddler is running on the default port
     proxyInfo.lpszProxyBypass = L"<local>";
 
     // Initialize WinINet with proxy settings
@@ -51,9 +65,20 @@ int main() {
     // Check the response status code
     DWORD statusCode = 0;
     DWORD statusCodeSize = sizeof(statusCode);
+    string contentTypeHeader;
     if (HttpQueryInfo(hConnect, HTTP_QUERY_STATUS_CODE | HTTP_QUERY_FLAG_NUMBER, &statusCode, &statusCodeSize, NULL) == TRUE) {
         if (statusCode == 200) {
             cout << "HTTP request was successful (Status Code 200 OK)." << endl;
+            char contentTypeBuffer[1024]{};
+            DWORD bufferSize = sizeof(contentTypeBuffer);
+
+            if (HttpQueryInfo(hConnect, HTTP_QUERY_CONTENT_TYPE, contentTypeBuffer, &bufferSize, NULL)) {
+                contentTypeHeader = string(contentTypeBuffer, bufferSize);
+            }
+            else {
+                cout << "Content - Type header is not found or an error occurred" << endl;
+            }
+
         }
         else {
             cout << "HTTP request was not successful. Status Code: " << statusCode << endl;
@@ -63,8 +88,39 @@ int main() {
     // Read and display the response content
     char responseBuffer[4096];  // Adjust buffer size as needed
     DWORD bytesRead = 0;
+    string responseBody;
+
     while (InternetReadFile(hConnect, responseBuffer, sizeof(responseBuffer), &bytesRead) && bytesRead > 0) {
-        cout.write(responseBuffer, bytesRead);
+        responseBody.append(responseBuffer, bytesRead);
+        //cout.write(responseBuffer, bytesRead);
+    }
+    string boundary = extractBoundary(contentTypeHeader);
+
+
+    cout << "----------------------------------------------------------------------------------------------------------------------------------------------------" << endl;
+    cout << "--" << boundary << endl;
+    cout << responseBody << endl;
+    cout << "--" << boundary << "--" << endl;
+    cout << "----------------------------------------------------------------------------------------------------------------------------------------------------" << endl;
+
+
+    // Split the response into parts using the boundary
+    size_t start = responseBody.find("--" + boundary);
+    size_t end = responseBody.find("--" + boundary + "--");
+
+    cout << "start = " << start << endl << "start = " << end << endl;
+
+    int partNumber = 1;
+
+    while (start != string::npos && end != string::npos) {
+        string part = responseBody.substr(start, end - start);
+        // Process the part here (e.g., save to a file)
+        cout << "Part : " << partNumber << endl << part << endl;
+
+        // Find the next part
+        start = responseBody.find("--" + boundary, end);
+        end = responseBody.find("--" + boundary + "--", start);
+        partNumber++;
     }
 
     // Continue with your HTTP request handling...
