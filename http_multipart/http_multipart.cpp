@@ -86,7 +86,7 @@ int main() {
     }
 
     // Read and display the response content
-    char responseBuffer[4096];  // Adjust buffer size as needed
+    char responseBuffer[4096]{};  // Adjust buffer size as needed
     DWORD bytesRead = 0;
     string responseBody;
 
@@ -106,9 +106,22 @@ int main() {
 
     // Split the response into parts using the boundary
     size_t start = responseBody.find("--" + boundary);
+
+    bool isFound = responseBody.find("--" + boundary) != string::npos;
+    if (isFound)
+    {
+        // printing success message if found
+        cout << "Substring Found" << endl;
+    }
+    else
+    {
+        // else printing the error message
+        cout << "Substring not Found" << endl;
+    }
+
     size_t end = responseBody.find("--" + boundary + "--");
 
-    cout << "start = " << start << endl << "start = " << end << endl;
+    //cout << "start = " << start << endl << "end = " << end << endl;
 
     int partNumber = 1;
 
