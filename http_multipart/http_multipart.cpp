@@ -21,6 +21,7 @@ string extractBoundary(string contentType) {
 }
 
 int findSubstringIndex(const char* mainString, const char* substring) {
+    cout << "mainstring" << endl;
     cout << "---------------------------------------------------------------------------------------------------------------------------------------------" << endl;
     cout << mainString << endl;
     cout << "------------------------------------------------------------------------------------------------------------------------------------------------------" << endl;
@@ -41,6 +42,18 @@ int findSubstringIndex(const char* mainString, const char* substring) {
         index++;
     }
     return -1;
+}
+
+void saveDICOMToFile(const string& dicomData, const string& filename) {
+    fstream outFile(filename, ios::out | ios::binary);
+    if (outFile.is_open()) {
+        outFile.write(dicomData.c_str(), dicomData.size());
+        outFile.close();
+        cout << "Saved DICOM data to " << filename << endl;
+    }
+    else {
+        cerr << "Error : unable to open file or writing" << endl;
+    }
 }
 
 int main() {
@@ -146,6 +159,7 @@ int main() {
     const char* mainString = responseBody.c_str();
     const char* subString = boundary.c_str();
     size_t start = findSubstringIndex(mainString, subString);
+    cout << "boundary length = " << boundary.length() << endl;
     if (start != -1) {
         cout << "start found at index " << start << endl;
     }
@@ -157,24 +171,25 @@ int main() {
 
     int partNumber = 1;
 
-    while (start != string::npos && end != string::npos) {
-        string fileData = responseBody.substr(start, end - start);
-        cout << "Part : " << partNumber << endl << fileData << endl;
-        // Process the part here (e.g., save to a file)
-        string fileName = "part_" + to_string(partNumber) + ".txt";
-        ofstream outFile(fileName, ios::out || ios::binary);
-        if (outFile.is_open()) {
-            outFile << fileData;
-            outFile.close();
-            cout << "part " << partNumber << " saved to " << fileName << endl;
+    if (start != string::npos) {
+        start += boundary.length();
+        while (true) {
+
+            size_t end = responseBody.find(boundary, start);
+            if (end != string::npos) {
+                string dicomData = responseBody.substr(start, end - start);
+                string fileName = "dicom_" + to_string(partNumber) + ".dcm";
+                saveDICOMToFile(dicomData, fileName);
+                start = end + boundary.length();
+                partNumber++;
+            }
+            else {
+                break;
+            }
         }
-        else {
-            cerr << "Error : unable to open file for writing" << endl;
-        }
-        // Find the next part
-        start = responseBody.find(boundary, end);
-        end = responseBody.find("--" + boundary, start);
-        partNumber++;
+    }
+    else {
+        cout << "no dicom parts found in the response" << endl;
     }
 
     // Continue with your HTTP request handling...
