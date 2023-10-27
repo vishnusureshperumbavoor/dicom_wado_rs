@@ -2,6 +2,7 @@
 #include <wininet.h>
 #include <iostream>
 #include <string>
+#include <string.h>
 using namespace std;
 
 // Function to extract the boundary parameter from the Content-Type header
@@ -15,6 +16,29 @@ string extractBoundary(string contentType) {
         }
     }
     return "";
+}
+
+int findSubstringIndex(const char* mainString, const char* substring) {
+    cout << "---------------------------------------------------------------------------------------------------------------------------------------------" << endl;
+    cout << mainString << endl;
+    cout << "------------------------------------------------------------------------------------------------------------------------------------------------------" << endl;
+    cout << "substring = " << substring << endl;
+    const char* mainPtr = mainString;
+    int index = 0;
+    while (*mainPtr != '\0') {
+        const char* subPtr = substring;
+        const char* tempMainPtr = mainPtr;
+        while (*subPtr != '\0' && *tempMainPtr == *subPtr) {
+            tempMainPtr++;
+            subPtr++;
+        }
+        if (*subPtr == '\0') {
+            return index;
+        }
+        mainPtr++;
+        index++;
+    }
+    return -1;
 }
 
 int main() {
@@ -66,14 +90,24 @@ int main() {
     DWORD statusCode = 0;
     DWORD statusCodeSize = sizeof(statusCode);
     string contentTypeHeader;
-    if (HttpQueryInfo(hConnect, HTTP_QUERY_STATUS_CODE | HTTP_QUERY_FLAG_NUMBER, &statusCode, &statusCodeSize, NULL) == TRUE) {
-        if (statusCode == 200) {
-            cout << "HTTP request was successful (Status Code 200 OK)." << endl;
-            char contentTypeBuffer[1024]{};
-            DWORD bufferSize = sizeof(contentTypeBuffer);
+    DWORD dwBufferLength = 0;
+    char* pszContentType = nullptr;
 
-            if (HttpQueryInfo(hConnect, HTTP_QUERY_CONTENT_TYPE, contentTypeBuffer, &bufferSize, NULL)) {
-                contentTypeHeader = string(contentTypeBuffer, bufferSize);
+    if (!HttpQueryInfo(hConnect, HTTP_QUERY_CONTENT_TYPE, pszContentType, &dwBufferLength, NULL)) {
+        if (GetLastError() == ERROR_INSUFFICIENT_BUFFER) {
+            cout << "HTTP request was successful (Status Code 200 OK)." << endl;
+            pszContentType = new char[dwBufferLength];
+
+            //char contentTypeBuffer[1024]{};
+            //DWORD bufferSize = sizeof(contentTypeBuffer);
+
+            if (HttpQueryInfo(hConnect, HTTP_QUERY_CONTENT_TYPE, pszContentType, &dwBufferLength, NULL)) {
+                //contentTypeHeader = string(contentTypeBuffer, bufferSize);
+                for (DWORD i = 0; i < dwBufferLength; i++) {
+                    if (pszContentType[i] != '\0') {
+                        contentTypeHeader += pszContentType[i];
+                    }
+                }
             }
             else {
                 cout << "Content - Type header is not found or an error occurred" << endl;
@@ -105,23 +139,27 @@ int main() {
 
 
     // Split the response into parts using the boundary
-    size_t start = responseBody.find("--" + boundary);
-
-    bool isFound = responseBody.find("--" + boundary) != string::npos;
-    if (isFound)
-    {
-        // printing success message if found
-        cout << "Substring Found" << endl;
+    boundary = "--" + boundary;
+    const char* mainString = responseBody.c_str();
+    const char* subString = boundary.c_str();
+    size_t start = findSubstringIndex(mainString, subString);
+    if (start != -1) {
+        cout << "start found at index " << start << endl;
     }
-    else
-    {
-        // else printing the error message
-        cout << "Substring not Found" << endl;
+    else {
+        cout << "start not found" << endl;
     }
 
-    size_t end = responseBody.find("--" + boundary + "--");
+    boundary = boundary + "--";
+    const char* subString2 = boundary.c_str();
+    size_t end = findSubstringIndex(mainString, subString2);
 
-    //cout << "start = " << start << endl << "end = " << end << endl;
+    if (end != -1) {
+        cout << "end found at index " << end << endl;
+    }
+    else {
+        cout << "end not found" << endl;
+    }
 
     int partNumber = 1;
 
