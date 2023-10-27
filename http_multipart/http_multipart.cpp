@@ -3,6 +3,8 @@
 #include <iostream>
 #include <string>
 #include <string.h>
+#include <vector>
+#include <fstream>
 using namespace std;
 
 // Function to extract the boundary parameter from the Content-Type header
@@ -58,7 +60,7 @@ int main() {
     }
 
     // Create an HTTP connection
-    hConnect = InternetOpenUrl(hInternet, L"https://dicomserver.co.uk:8989/wado/studies/1.2.840.113619.2.3.281.8005.2001.11.14.45",
+    hConnect = InternetOpenUrl(hInternet, L"https://dicomserver.co.uk:8989/wado/studies/2.25.226245767546263669921319690953240842662",
         NULL, 0, INTERNET_FLAG_RELOAD, 0);
     if (hConnect == NULL) {
         // Handle error
@@ -135,6 +137,7 @@ int main() {
     cout << "--" << boundary << endl;
     cout << responseBody << endl;
     cout << "--" << boundary << "--" << endl;
+    cout << sizeof(responseBody) << endl;
     cout << "----------------------------------------------------------------------------------------------------------------------------------------------------" << endl;
 
 
@@ -150,27 +153,27 @@ int main() {
         cout << "start not found" << endl;
     }
 
-    boundary = boundary + "--";
-    const char* subString2 = boundary.c_str();
-    size_t end = findSubstringIndex(mainString, subString2);
-
-    if (end != -1) {
-        cout << "end found at index " << end << endl;
-    }
-    else {
-        cout << "end not found" << endl;
-    }
+    size_t end = responseBody.find("--" + boundary, start);
 
     int partNumber = 1;
 
     while (start != string::npos && end != string::npos) {
-        string part = responseBody.substr(start, end - start);
+        string fileData = responseBody.substr(start, end - start);
+        cout << "Part : " << partNumber << endl << fileData << endl;
         // Process the part here (e.g., save to a file)
-        cout << "Part : " << partNumber << endl << part << endl;
-
+        string fileName = "part_" + to_string(partNumber) + ".txt";
+        ofstream outFile(fileName, ios::out || ios::binary);
+        if (outFile.is_open()) {
+            outFile << fileData;
+            outFile.close();
+            cout << "part " << partNumber << " saved to " << fileName << endl;
+        }
+        else {
+            cerr << "Error : unable to open file for writing" << endl;
+        }
         // Find the next part
-        start = responseBody.find("--" + boundary, end);
-        end = responseBody.find("--" + boundary + "--", start);
+        start = responseBody.find(boundary, end);
+        end = responseBody.find("--" + boundary, start);
         partNumber++;
     }
 
