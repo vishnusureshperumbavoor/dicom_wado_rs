@@ -150,7 +150,6 @@ int main() {
     cout << "--" << boundary << endl;
     cout << responseBody << endl;
     cout << "--" << boundary << "--" << endl;
-    cout << sizeof(responseBody) << endl;
     cout << "----------------------------------------------------------------------------------------------------------------------------------------------------" << endl;
 
 
@@ -169,12 +168,13 @@ int main() {
 
     size_t end = responseBody.find("--" + boundary, start);
 
+    cout << "end = " << end << endl;
+
     int partNumber = 1;
 
     if (start != string::npos) {
         start += boundary.length();
         while (true) {
-
             size_t end = responseBody.find(boundary, start);
             if (end != string::npos) {
                 string dicomData = responseBody.substr(start, end - start);
