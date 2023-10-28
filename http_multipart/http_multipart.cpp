@@ -140,8 +140,6 @@ int main() {
         }
     }
 
-    cout << "contenttypeheader = " << contentTypeHeader << endl;
-
     // Read and display the response content
     char responseBuffer[4096]{};  // Adjust buffer size as needed
     DWORD bytesRead = 0;
@@ -178,11 +176,11 @@ int main() {
                 dicomFile.write(extractedSubsequence.data(), extractedSubsequence.size());
                 dicomFile.close();
                 if (!dicomFile) {
-                    std::cerr << "Error occurred while writing the DICOM file." << std::endl;
+                    cerr << "Error occurred while writing the DICOM file." << endl;
                     return 1;
                 }
 
-                std::cout << fileName << " created successfully." << std::endl;
+                cout << fileName << " created successfully." << endl;
 
                 start = end + boundary.length();
                 partNumber++;
