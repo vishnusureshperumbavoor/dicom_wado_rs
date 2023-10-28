@@ -37,12 +37,12 @@ size_t findSubstringIndex(const vector<char>& charVector,const string& searchStr
 
 int findSubstringIndexStartingFrom(const std::vector<char>& charVector, const std::string& searchString, size_t startIndex) {
     if (startIndex >= charVector.size()) {
-        return -1;  // Start index is out of bounds
+        return -1;
     }
 
-    std::string vectorAsString(charVector.begin() + startIndex, charVector.end());
+    string vectorAsString(charVector.begin() + startIndex, charVector.end());
 
-    auto it = std::search(vectorAsString.begin(), vectorAsString.end(), searchString.begin(), searchString.end());
+    auto it = search(vectorAsString.begin(), vectorAsString.end(), searchString.begin(), searchString.end());
 
     if (it != vectorAsString.end()) {
         // Calculate the index by adding the start index to the distance from the beginning of the string
@@ -153,6 +153,7 @@ int main() {
 
     // Split the response into parts using the boundary
     boundary = "--" + boundary;
+    cout << "boundary = " << boundary << endl;
 
     // Store the data in a vector of characters
     vector<char> data(responseBody.begin(), responseBody.end());
@@ -167,11 +168,10 @@ int main() {
             size_t end = findSubstringIndexStartingFrom(data,boundary,start);
             if (end != string::npos) {
                 size_t length = end - start;
+
+                // Search for the header and find its position
                 vector<char> extractedSubsequence(responseBody.begin() + start, responseBody.begin() + start + length);
-                //string extractedString(extractedSubsequence.begin(), extractedSubsequence.end());
-                //string dicomData = responseBody.substr(start, end - start);
                 string fileName = "dicom_" + to_string(partNumber) + ".dcm";
-                //saveDICOMToFile(extractedString, fileName);
                 ofstream dicomFile(fileName, ios::out | ios::binary);
                 dicomFile.write(extractedSubsequence.data(), extractedSubsequence.size());
                 dicomFile.close();
