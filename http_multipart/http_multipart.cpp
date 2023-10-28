@@ -178,7 +178,7 @@ int main() {
                     // Assuming the DICOM data is in a vector<char> named dicomData
                     for (size_t i = 0; i < dicomData.size(); ++i) {
                         string header = "Content - Type: application / dicom; transfer - syntax = \"1.2.840.10008.1.2.1\"";
-                        int headerlen = header.length();
+                        int headerlen = header.length()-2;
                         if (i >= headerlen) {
                             dicomFile.put(dicomData[i]);
                         }
