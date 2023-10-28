@@ -2,8 +2,14 @@
 #include <wininet.h>
 #include <iostream>
 #include <string>
+<<<<<<< HEAD
 #include <algorithm>
 #include <vector>
+=======
+#include <string.h>
+#include <vector>
+#include <fstream>
+>>>>>>> f24ad482f9ecce6c3afcbcc09400b2fe03f51193
 using namespace std;
 
 size_t isSubstring(const std::string& s2, const std::string& s1)
@@ -40,6 +46,42 @@ string extractBoundary(string contentType) {
     return "";
 }
 
+int findSubstringIndex(const char* mainString, const char* substring) {
+    cout << "mainstring" << endl;
+    cout << "---------------------------------------------------------------------------------------------------------------------------------------------" << endl;
+    cout << mainString << endl;
+    cout << "------------------------------------------------------------------------------------------------------------------------------------------------------" << endl;
+    cout << "substring = " << substring << endl;
+    const char* mainPtr = mainString;
+    int index = 0;
+    while (*mainPtr != '\0') {
+        const char* subPtr = substring;
+        const char* tempMainPtr = mainPtr;
+        while (*subPtr != '\0' && *tempMainPtr == *subPtr) {
+            tempMainPtr++;
+            subPtr++;
+        }
+        if (*subPtr == '\0') {
+            return index;
+        }
+        mainPtr++;
+        index++;
+    }
+    return -1;
+}
+
+void saveDICOMToFile(const string& dicomData, const string& filename) {
+    fstream outFile(filename, ios::out | ios::binary);
+    if (outFile.is_open()) {
+        outFile.write(dicomData.c_str(), dicomData.size());
+        outFile.close();
+        cout << "Saved DICOM data to " << filename << endl;
+    }
+    else {
+        cerr << "Error : unable to open file or writing" << endl;
+    }
+}
+
 int main() {
     HINTERNET hInternet, hConnect;
 
@@ -57,7 +99,7 @@ int main() {
     }
 
     // Create an HTTP connection
-    hConnect = InternetOpenUrl(hInternet, L"https://dicomserver.co.uk:8989/wado/studies/1.2.840.113619.2.3.281.8005.2001.11.14.45",
+    hConnect = InternetOpenUrl(hInternet, L"https://dicomserver.co.uk:8989/wado/studies/2.25.226245767546263669921319690953240842662",
         NULL, 0, INTERNET_FLAG_RELOAD, 0);
     if (hConnect == NULL) {
         // Handle error
@@ -89,14 +131,24 @@ int main() {
     DWORD statusCode = 0;
     DWORD statusCodeSize = sizeof(statusCode);
     string contentTypeHeader;
-    if (HttpQueryInfo(hConnect, HTTP_QUERY_STATUS_CODE | HTTP_QUERY_FLAG_NUMBER, &statusCode, &statusCodeSize, NULL) == TRUE) {
-        if (statusCode == 200) {
-            cout << "HTTP request was successful (Status Code 200 OK)." << endl;
-            char contentTypeBuffer[1024]{};
-            DWORD bufferSize = sizeof(contentTypeBuffer);
+    DWORD dwBufferLength = 0;
+    char* pszContentType = nullptr;
 
-            if (HttpQueryInfo(hConnect, HTTP_QUERY_CONTENT_TYPE, contentTypeBuffer, &bufferSize, NULL)) {
-                contentTypeHeader = string(contentTypeBuffer, bufferSize);
+    if (!HttpQueryInfo(hConnect, HTTP_QUERY_CONTENT_TYPE, pszContentType, &dwBufferLength, NULL)) {
+        if (GetLastError() == ERROR_INSUFFICIENT_BUFFER) {
+            cout << "HTTP request was successful (Status Code 200 OK)." << endl;
+            pszContentType = new char[dwBufferLength];
+
+            //char contentTypeBuffer[1024]{};
+            //DWORD bufferSize = sizeof(contentTypeBuffer);
+
+            if (HttpQueryInfo(hConnect, HTTP_QUERY_CONTENT_TYPE, pszContentType, &dwBufferLength, NULL)) {
+                //contentTypeHeader = string(contentTypeBuffer, bufferSize);
+                for (DWORD i = 0; i < dwBufferLength; i++) {
+                    if (pszContentType[i] != '\0') {
+                        contentTypeHeader += pszContentType[i];
+                    }
+                }
             }
             else {
                 cout << "Content - Type header is not found or an error occurred" << endl;
@@ -122,6 +174,7 @@ int main() {
     cout << boundary << endl;
 
     // Split the response into parts using the boundary
+<<<<<<< HEAD
     size_t start = responseBody.find(boundary);
     //size_t start = isSubstring(responseBody, "--" + boundary);
     size_t end = responseBody.find("--" + boundary + "--");
@@ -137,6 +190,44 @@ int main() {
         start = responseBody.find("--" + boundary, end);
         end = responseBody.find("--" + boundary + "--", start);
         partNumber++;
+=======
+    boundary = "--" + boundary;
+    const char* mainString = responseBody.c_str();
+    const char* subString = boundary.c_str();
+    size_t start = findSubstringIndex(mainString, subString);
+    cout << "boundary length = " << boundary.length() << endl;
+    if (start != -1) {
+        cout << "start found at index " << start << endl;
+    }
+    else {
+        cout << "start not found" << endl;
+    }
+
+    size_t end = responseBody.find("--" + boundary, start);
+
+    cout << "end = " << end << endl;
+
+    int partNumber = 1;
+
+    if (start != string::npos) {
+        start += boundary.length();
+        while (true) {
+            size_t end = responseBody.find(boundary, start);
+            if (end != string::npos) {
+                string dicomData = responseBody.substr(start, end - start);
+                string fileName = "dicom_" + to_string(partNumber) + ".dcm";
+                saveDICOMToFile(dicomData, fileName);
+                start = end + boundary.length();
+                partNumber++;
+            }
+            else {
+                break;
+            }
+        }
+    }
+    else {
+        cout << "no dicom parts found in the response" << endl;
+>>>>>>> f24ad482f9ecce6c3afcbcc09400b2fe03f51193
     }
 
     // Continue with your HTTP request handling...
