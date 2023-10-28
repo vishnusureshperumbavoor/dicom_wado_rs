@@ -2,15 +2,38 @@
 #include <wininet.h>
 #include <iostream>
 #include <string>
+#include <algorithm>
+#include <vector>
 using namespace std;
+
+size_t isSubstring(const std::string& s2, const std::string& s1)
+{
+    int M = s1.length();
+    int N = s2.length();
+
+    for (int i = 0; i <= N - M; i++) {
+        int j;
+        for (j = 0; j < M; j++)
+            if (s2[i + j] != s1[j])
+                break;
+
+        if (j == M)
+            return i;
+    }
+
+    return -1;
+}
 
 // Function to extract the boundary parameter from the Content-Type header
 string extractBoundary(string contentType) {
     size_t startPos = contentType.find("\"");
-    if (startPos != std::string::npos) {
+    cout << startPos << endl;
+
+    if (startPos != string::npos) {
         size_t endPos = contentType.find("\"", startPos + 1);
-        if (endPos != std::string::npos) {
-            std::string substring = contentType.substr(startPos + 1, endPos - startPos - 1);
+        if (endPos != string::npos) {
+            string substring = "--";
+            substring += contentType.substr(startPos + 1, endPos - startPos - 1);
             return substring;
         }
     }
@@ -94,40 +117,20 @@ int main() {
         responseBody.append(responseBuffer, bytesRead);
         //cout.write(responseBuffer, bytesRead);
     }
+
     string boundary = extractBoundary(contentTypeHeader);
-
-
-    cout << "----------------------------------------------------------------------------------------------------------------------------------------------------" << endl;
-    cout << "--" << boundary << endl;
-    cout << responseBody << endl;
-    cout << "--" << boundary << "--" << endl;
-    cout << "----------------------------------------------------------------------------------------------------------------------------------------------------" << endl;
-
+    cout << boundary << endl;
 
     // Split the response into parts using the boundary
-    size_t start = responseBody.find("--" + boundary);
-
-    bool isFound = responseBody.find("--" + boundary) != string::npos;
-    if (isFound)
-    {
-        // printing success message if found
-        cout << "Substring Found" << endl;
-    }
-    else
-    {
-        // else printing the error message
-        cout << "Substring not Found" << endl;
-    }
-
+    size_t start = responseBody.find(boundary);
+    //size_t start = isSubstring(responseBody, "--" + boundary);
     size_t end = responseBody.find("--" + boundary + "--");
-
-    //cout << "start = " << start << endl << "end = " << end << endl;
+    cout << "start = " << start << endl << " end = " << end << endl;
 
     int partNumber = 1;
 
     while (start != string::npos && end != string::npos) {
         string part = responseBody.substr(start, end - start);
-        // Process the part here (e.g., save to a file)
         cout << "Part : " << partNumber << endl << part << endl;
 
         // Find the next part
