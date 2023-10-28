@@ -140,6 +140,8 @@ int main() {
         }
     }
 
+    cout << "contenttypeheader = " << contentTypeHeader << endl;
+
     // Read and display the response content
     char responseBuffer[4096]{};  // Adjust buffer size as needed
     DWORD bytesRead = 0;
@@ -154,8 +156,6 @@ int main() {
     // Split the response into parts using the boundary
     boundary = "--" + boundary;
 
-    cout << boundary << endl;
-
     // Store the data in a vector of characters
     vector<char> data(responseBody.begin(), responseBody.end());
     const char* subString = boundary.c_str();
@@ -167,12 +167,23 @@ int main() {
         start += boundary.length();
         while (true) {
             size_t end = findSubstringIndexStartingFrom(data,boundary,start);
-            cout << "end = " << end << endl;
-            
             if (end != string::npos) {
-                string dicomData = responseBody.substr(start, end - start);
+                size_t length = end - start;
+                vector<char> extractedSubsequence(responseBody.begin() + start, responseBody.begin() + start + length);
+                //string extractedString(extractedSubsequence.begin(), extractedSubsequence.end());
+                //string dicomData = responseBody.substr(start, end - start);
                 string fileName = "dicom_" + to_string(partNumber) + ".dcm";
-                saveDICOMToFile(dicomData, fileName);
+                //saveDICOMToFile(extractedString, fileName);
+                ofstream dicomFile(fileName, ios::out | ios::binary);
+                dicomFile.write(extractedSubsequence.data(), extractedSubsequence.size());
+                dicomFile.close();
+                if (!dicomFile) {
+                    std::cerr << "Error occurred while writing the DICOM file." << std::endl;
+                    return 1;
+                }
+
+                std::cout << fileName << " created successfully." << std::endl;
+
                 start = end + boundary.length();
                 partNumber++;
             }
@@ -185,9 +196,6 @@ int main() {
         cout << "no dicom parts found in the response" << endl;
     }
 
-    // Continue with your HTTP request handling...
-
-    // Don't forget to close handles when you're done
     InternetCloseHandle(hConnect);
     InternetCloseHandle(hInternet);
 
