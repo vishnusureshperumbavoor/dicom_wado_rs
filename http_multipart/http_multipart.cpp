@@ -153,12 +153,12 @@ int main() {
 
     // Split the response into parts using the boundary
     boundary = "--" + boundary;
-    cout << "boundary = " << boundary << endl;
+    //boundary = "Content-Type: application/dicom; transfer-syntax=\"1.2.840.10008.1.2.1\"";
 
     // Store the data in a vector of characters
     vector<char> data(responseBody.begin(), responseBody.end());
-    const char* subString = boundary.c_str();
-    size_t start = findSubstringIndex(data, subString);
+    //const char* subString = boundary.c_str();
+    size_t start = findSubstringIndex(data, boundary);
     int partNumber = 1;
 
     //--414f2452-0bd2-4c59-b5b3-f285a6c6a9ab
@@ -170,17 +170,26 @@ int main() {
                 size_t length = end - start;
 
                 // Search for the header and find its position
-                vector<char> extractedSubsequence(responseBody.begin() + start, responseBody.begin() + start + length);
+                vector<char> dicomData(responseBody.begin() + start, responseBody.begin() + start + length);
+
                 string fileName = "dicom_" + to_string(partNumber) + ".dcm";
                 ofstream dicomFile(fileName, ios::out | ios::binary);
-                dicomFile.write(extractedSubsequence.data(), extractedSubsequence.size());
-                dicomFile.close();
-                if (!dicomFile) {
-                    cerr << "Error occurred while writing the DICOM file." << endl;
-                    return 1;
-                }
+                if (dicomFile.is_open()) {
+                    // Assuming the DICOM data is in a vector<char> named dicomData
+                    for (size_t i = 0; i < dicomData.size(); ++i) {
+                        string header = "Content - Type: application / dicom; transfer - syntax = \"1.2.840.10008.1.2.1\"";
+                        int headerlen = header.length();
+                        if (i >= headerlen) {
+                            dicomFile.put(dicomData[i]);
+                        }
+                    }
 
-                cout << fileName << " created successfully." << endl;
+                    dicomFile.close();
+                    std::cout << "DICOM data saved to output.dcm, excluding the first 3 lines." << std::endl;
+                }
+                else {
+                    std::cerr << "Failed to open the DICOM file for writing." << std::endl;
+                }
 
                 start = end + boundary.length();
                 partNumber++;
