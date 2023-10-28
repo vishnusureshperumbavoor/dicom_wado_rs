@@ -2,72 +2,55 @@
 #include <wininet.h>
 #include <iostream>
 #include <string>
-<<<<<<< HEAD
-#include <algorithm>
-#include <vector>
-=======
 #include <string.h>
 #include <vector>
 #include <fstream>
->>>>>>> f24ad482f9ecce6c3afcbcc09400b2fe03f51193
+#include <algorithm>
 using namespace std;
-
-size_t isSubstring(const std::string& s2, const std::string& s1)
-{
-    int M = s1.length();
-    int N = s2.length();
-
-    for (int i = 0; i <= N - M; i++) {
-        int j;
-        for (j = 0; j < M; j++)
-            if (s2[i + j] != s1[j])
-                break;
-
-        if (j == M)
-            return i;
-    }
-
-    return -1;
-}
 
 // Function to extract the boundary parameter from the Content-Type header
 string extractBoundary(string contentType) {
     size_t startPos = contentType.find("\"");
-    cout << startPos << endl;
-
-    if (startPos != string::npos) {
+    if (startPos != std::string::npos) {
         size_t endPos = contentType.find("\"", startPos + 1);
-        if (endPos != string::npos) {
-            string substring = "--";
-            substring += contentType.substr(startPos + 1, endPos - startPos - 1);
+        if (endPos != std::string::npos) {
+            std::string substring = contentType.substr(startPos + 1, endPos - startPos - 1);
             return substring;
         }
     }
     return "";
 }
 
-int findSubstringIndex(const char* mainString, const char* substring) {
-    cout << "mainstring" << endl;
-    cout << "---------------------------------------------------------------------------------------------------------------------------------------------" << endl;
-    cout << mainString << endl;
-    cout << "------------------------------------------------------------------------------------------------------------------------------------------------------" << endl;
-    cout << "substring = " << substring << endl;
-    const char* mainPtr = mainString;
-    int index = 0;
-    while (*mainPtr != '\0') {
-        const char* subPtr = substring;
-        const char* tempMainPtr = mainPtr;
-        while (*subPtr != '\0' && *tempMainPtr == *subPtr) {
-            tempMainPtr++;
-            subPtr++;
-        }
-        if (*subPtr == '\0') {
-            return index;
-        }
-        mainPtr++;
-        index++;
+size_t findSubstringIndex(const vector<char>& charVector,const string& searchString) {
+    std::string vectorAsString(charVector.begin(), charVector.end());
+
+    auto it = search(vectorAsString.begin(), vectorAsString.end(), searchString.begin(), searchString.end());
+
+    if (it != vectorAsString.end()) {
+        // Calculate the index by subtracting the iterator from the beginning of the string
+        return distance(vectorAsString.begin(), it);
     }
-    return -1;
+    else {
+        return -1; // Not found
+    }
+}
+
+int findSubstringIndexStartingFrom(const std::vector<char>& charVector, const std::string& searchString, size_t startIndex) {
+    if (startIndex >= charVector.size()) {
+        return -1;  // Start index is out of bounds
+    }
+
+    std::string vectorAsString(charVector.begin() + startIndex, charVector.end());
+
+    auto it = std::search(vectorAsString.begin(), vectorAsString.end(), searchString.begin(), searchString.end());
+
+    if (it != vectorAsString.end()) {
+        // Calculate the index by adding the start index to the distance from the beginning of the string
+        return startIndex + std::distance(vectorAsString.begin(), it);
+    }
+    else {
+        return -1; // Not found
+    }
 }
 
 void saveDICOMToFile(const string& dicomData, const string& filename) {
@@ -139,9 +122,6 @@ int main() {
             cout << "HTTP request was successful (Status Code 200 OK)." << endl;
             pszContentType = new char[dwBufferLength];
 
-            //char contentTypeBuffer[1024]{};
-            //DWORD bufferSize = sizeof(contentTypeBuffer);
-
             if (HttpQueryInfo(hConnect, HTTP_QUERY_CONTENT_TYPE, pszContentType, &dwBufferLength, NULL)) {
                 //contentTypeHeader = string(contentTypeBuffer, bufferSize);
                 for (DWORD i = 0; i < dwBufferLength; i++) {
@@ -169,50 +149,26 @@ int main() {
         responseBody.append(responseBuffer, bytesRead);
         //cout.write(responseBuffer, bytesRead);
     }
-
     string boundary = extractBoundary(contentTypeHeader);
-    cout << boundary << endl;
 
     // Split the response into parts using the boundary
-<<<<<<< HEAD
-    size_t start = responseBody.find(boundary);
-    //size_t start = isSubstring(responseBody, "--" + boundary);
-    size_t end = responseBody.find("--" + boundary + "--");
-    cout << "start = " << start << endl << " end = " << end << endl;
-
-    int partNumber = 1;
-
-    while (start != string::npos && end != string::npos) {
-        string part = responseBody.substr(start, end - start);
-        cout << "Part : " << partNumber << endl << part << endl;
-
-        // Find the next part
-        start = responseBody.find("--" + boundary, end);
-        end = responseBody.find("--" + boundary + "--", start);
-        partNumber++;
-=======
     boundary = "--" + boundary;
-    const char* mainString = responseBody.c_str();
+
+    cout << boundary << endl;
+
+    // Store the data in a vector of characters
+    vector<char> data(responseBody.begin(), responseBody.end());
     const char* subString = boundary.c_str();
-    size_t start = findSubstringIndex(mainString, subString);
-    cout << "boundary length = " << boundary.length() << endl;
-    if (start != -1) {
-        cout << "start found at index " << start << endl;
-    }
-    else {
-        cout << "start not found" << endl;
-    }
-
-    size_t end = responseBody.find("--" + boundary, start);
-
-    cout << "end = " << end << endl;
-
+    size_t start = findSubstringIndex(data, subString);
     int partNumber = 1;
 
+    //--414f2452-0bd2-4c59-b5b3-f285a6c6a9ab
     if (start != string::npos) {
         start += boundary.length();
         while (true) {
-            size_t end = responseBody.find(boundary, start);
+            size_t end = findSubstringIndexStartingFrom(data,boundary,start);
+            cout << "end = " << end << endl;
+            
             if (end != string::npos) {
                 string dicomData = responseBody.substr(start, end - start);
                 string fileName = "dicom_" + to_string(partNumber) + ".dcm";
@@ -227,7 +183,6 @@ int main() {
     }
     else {
         cout << "no dicom parts found in the response" << endl;
->>>>>>> f24ad482f9ecce6c3afcbcc09400b2fe03f51193
     }
 
     // Continue with your HTTP request handling...
