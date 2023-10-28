@@ -185,10 +185,10 @@ int main() {
                     }
 
                     dicomFile.close();
-                    std::cout << "DICOM data saved to output.dcm, excluding the first 3 lines." << std::endl;
+                    cout << fileName << " saved successfully" << endl;
                 }
                 else {
-                    std::cerr << "Failed to open the DICOM file for writing." << std::endl;
+                    cerr << "Failed to open the DICOM file for writing." << endl;
                 }
 
                 start = end + boundary.length();
